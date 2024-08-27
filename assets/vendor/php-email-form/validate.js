@@ -1,85 +1,98 @@
-/**
-* PHP Email Form Validation - v3.6
-* URL: https://bootstrapmade.com/php-email-form/
-* Author: BootstrapMade.com
-*/
-(function () {
-  "use strict";
+(function (root, factory) {
+    'use strict';
 
-  let forms = document.querySelectorAll('.php-email-form');
+    if (typeof define === 'function' && define.amd) {
+        define([], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory();
+    } else {
+        root.ContactForm = factory();
+    }
+}(this, function () {
+    'use strict';
 
-  forms.forEach( function(e) {
-    e.addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      let thisForm = this;
-
-      let action = thisForm.getAttribute('action');
-      let recaptcha = thisForm.getAttribute('data-recaptcha-site-key');
-      
-      if( ! action ) {
-        displayError(thisForm, 'The form action property is not set!');
-        return;
-      }
-      thisForm.querySelector('.loading').classList.add('d-block');
-      thisForm.querySelector('.error-message').classList.remove('d-block');
-      thisForm.querySelector('.sent-message').classList.remove('d-block');
-
-      let formData = new FormData( thisForm );
-
-      if ( recaptcha ) {
-        if(typeof grecaptcha !== "undefined" ) {
-          grecaptcha.ready(function() {
-            try {
-              grecaptcha.execute(recaptcha, {action: 'php_email_form_submit'})
-              .then(token => {
-                formData.set('recaptcha-response', token);
-                php_email_form_submit(thisForm, action, formData);
-              })
-            } catch(error) {
-              displayError(thisForm, error);
-            }
-          });
-        } else {
-          displayError(thisForm, 'The reCaptcha javascript API url is not loaded!')
+    var ContactForm = function (target) {
+        if (!this || !(this instanceof ContactForm)) {
+            return new ContactForm(target);
         }
-      } else {
-        php_email_form_submit(thisForm, action, formData);
-      }
-    });
-  });
 
-  function php_email_form_submit(thisForm, action, formData) {
-    fetch(action, {
-      method: 'POST',
-      body: formData,
-      headers: {'X-Requested-With': 'XMLHttpRequest'}
-    })
-    .then(response => {
-      if( response.ok ) {
-        return response.text();
-      } else {
-        throw new Error(`${response.status} ${response.statusText} ${response.url}`); 
-      }
-    })
-    .then(data => {
-      thisForm.querySelector('.loading').classList.remove('d-block');
-      if (data.trim() == 'OK') {
-        thisForm.querySelector('.sent-message').classList.add('d-block');
-        thisForm.reset(); 
-      } else {
-        throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action); 
-      }
-    })
-    .catch((error) => {
-      displayError(thisForm, error);
-    });
-  }
+        this.form = target instanceof Node ? target : document.querySelector(target);
 
-  function displayError(thisForm, error) {
-    thisForm.querySelector('.loading').classList.remove('d-block');
-    thisForm.querySelector('.error-message').innerHTML = error;
-    thisForm.querySelector('.error-message').classList.add('d-block');
-  }
+        if (this.form === null) {
+            return;
+        }
 
-})();
+        this.init();
+    };
+
+    ContactForm.prototype = {
+        hasClass: function (el, name) {
+            return new RegExp('(\\s|^)' + name + '(\\s|$)').test(el.className);
+        },
+        addClass: function (el, name) {
+            if (!this.hasClass(el, name)) {
+                el.className += (el.className ? ' ' : '') + name;
+            }
+        },
+        addError: function (el) {
+            return this.addClass(el.parentNode, 'has-error');
+        },
+        removeClass: function (el, name) {
+            if (this.hasClass(el, name)) {
+                el.className = el.className.replace(new RegExp('(\\s|^)' + name + '(\\s|$)'), ' ').replace(/^\s+|\s+$/g, '');
+            }
+        },
+        validate: function () {
+            var elements = Array.prototype.slice.call(document.querySelectorAll('.form-control'));
+
+            this.form.addEventListener('submit', function(e) {
+                if (!e.target.checkValidity()) {
+                    e.preventDefault();
+
+                    elements.map(function(element) {
+                        if (this.hasClass(element.parentNode, 'has-error')) {
+                            this.removeClass(element.parentNode, 'has-error');
+                        }
+                    }.bind(this));
+
+                    var hasError = false,
+                        name     = document.querySelector('#form-name'),
+                        email    = document.querySelector('#form-email'),
+                        subject  = document.querySelector('#form-subject'),
+                        message  = document.querySelector('#form-message'),
+                        // @from: https://html.spec.whatwg.org/multipage/forms.html#e-mail-state-(type=email)
+                        testmail = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+                    if (name.value === '') {
+                        hasError = true;
+                        this.addError(name);
+                    }
+
+                    if (!testmail.test(email.value)) {
+                        hasError = true;
+                        this.addError(email);
+                    }
+
+                    if (subject.value === '') {
+                        hasError = true;
+                        this.addError(subject);
+                    }
+
+                    if (message.value === '') {
+                        hasError = true;
+                        this.addError(message);
+                    }
+
+                    if (hasError === false) {
+                        this.form.submit();
+                    }
+                }
+            }.bind(this), false);
+        },
+        init: function () {
+            document.addEventListener('DOMContentLoaded', this.validate.bind(this), false);
+        }
+    };
+
+    return ContactForm;
+}));
