@@ -49,21 +49,20 @@
                 if (!e.target.checkValidity()) {
                     e.preventDefault();
 
-                    elements.map(function(element) {
+                    elements.forEach(function(element) {
                         if (this.hasClass(element.parentNode, 'has-error')) {
                             this.removeClass(element.parentNode, 'has-error');
                         }
                     }.bind(this));
 
                     var hasError = false,
-                        name     = document.querySelector('#form-name'),
-                        email    = document.querySelector('#form-email'),
-                        subject  = document.querySelector('#form-subject'),
-                        message  = document.querySelector('#form-message'),
-                        // @from: https://html.spec.whatwg.org/multipage/forms.html#e-mail-state-(type=email)
+                        name     = document.querySelector('[name="name"]'),
+                        email    = document.querySelector('[name="email"]'),
+                        subject  = document.querySelector('[name="subject"]'),
+                        message  = document.querySelector('[name="message"]'),
                         testmail = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
-                    if (name.value === '') {
+                    if (name.value.trim() === '') {
                         hasError = true;
                         this.addError(name);
                     }
@@ -73,18 +72,20 @@
                         this.addError(email);
                     }
 
-                    if (subject.value === '') {
+                    if (subject && subject.value.trim() === '') {
                         hasError = true;
                         this.addError(subject);
                     }
 
-                    if (message.value === '') {
+                    if (message.value.trim() === '') {
                         hasError = true;
                         this.addError(message);
                     }
 
-                    if (hasError === false) {
-                        this.form.submit();
+                    if (hasError) {
+                        e.preventDefault(); // Hatalı durumda form gönderimini durdur
+                    } else {
+                        this.form.submit(); // Hatalar yoksa formu gönder
                     }
                 }
             }.bind(this), false);
